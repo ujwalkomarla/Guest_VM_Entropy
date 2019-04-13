@@ -1,0 +1,48 @@
+1.Entropy: Measure of randomness
+2.Importance of entropy
+3.Virtualization and probable issues - Sync, Coalescing, Bypass technique
+
+4. Journey to unravel the ever elusive question
+5. Does Virtualization impact entropy in Guest
+
+6. What property of entropy are we evaluating?
+		- Quality
+			Evaluate and compare entropy quality between system running on phy and as vm -done by running NIST test suite
+		- Quantity
+			Quantify the data rate of entropy gathering/delivery by pulling from /dev/urandom.
+	brought us to the question on test bed
+7. OSes : Windows, Linux, Mac
+		Ability to look into and understand the architecture, we discarded windows. Also, taking into consideration the customers who are interested in this issue, we choose linux.
+		Test bed - SCSi, Kernel Version
+	Narrowing down, we did
+8. Platform test on uRandom : Host vs VM - Quality, Quantity
+		Quality analysis results obtained from NIST placed no obvious issue in running the OS as VM over Physical.
+		Quantity vary but on both +/- sides. Again, attributing no issues with VM compared to Phy.
+	Leading us to
+9. Distros : Debian, Redhat, ttylinux - Quality, Quantity
+	Though the data rates were similar across platforms, they varied between distros.
+	Test display?(server version, stats build, seed file?)
+	Seed file - Solution for limited entropy during power up/ fresh install.
+				Recipe for disaster Clone, Checkpoint, Fork
+				Automate install, delete on start and shutdown using init.d
+	But computing power!
+	Not until late, we figured out CPU usage(Gave up, since it is not us who are the cause of it and took us lot of different tests trying to figure out - seed file, stats build..)
+10. stap, inotifywait, lsof, d3(instrument linux kernel)
+	Evaluate pool source
+	No of sources, Coalescing 
+	workload - Guest, Hypervisor
+		Automation of tests and instrumenting linux kernel with data visualization.
+		Info about entropy pool : /proc/sys/kernel/random
+		Saw tooth pattern....Workload affect....Pool sources(HWRNGd,NW,Disk)...	
+	Plots
+Future Work:
+	Analysis on divergence time and correlation of entropy with VM Clone/Fork/Checkpoint.
+	Evaluate entropy pool reseeding techniques for above situations.
+
+Questions?
+
+Thanks! Opportunity, learning and experience, time
+
+https://wiki.eng.vmware.com/VSECR/SecEng/MeasuringEntropy
+
+Photos
