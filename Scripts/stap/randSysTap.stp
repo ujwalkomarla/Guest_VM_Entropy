@@ -1,0 +1,70 @@
+global ID;
+probe kernel.function("mix_pool_bytes@drivers/char/random.c"){
+	printf("%10d#%25s#Pool - %12s#Bytes - %4d\n",gettimeofday_ms(),ppfunc(),kernel_string($r->name),$nbytes);
+}
+probe kernel.function("__mix_pool_bytes@drivers/char/random.c"){
+	printf("%10d#%25s#Pool - %12s#Bytes - %4d\n",gettimeofday_ms(),ppfunc(),kernel_string($r->name),$nbytes);
+}
+probe kernel.function("account@drivers/char/random.c"){
+	printf("%10d#%25s#Pool - %12s#Bytes - %4d#Resvd - %4d\n",gettimeofday_ms(),ppfunc(),kernel_string($r->name),$nbytes,$reserved);
+}
+probe kernel.function("add_device_randomness@drivers/char/random.c"){
+	printf("%10d#%25s#Bytes - %4d\n",gettimeofday_ms(),ppfunc(),$size);
+}
+probe kernel.function("add_disk_randomness@drivers/char/random.c"){
+	ID++;
+	printf("%10d#%25s#ID-%10d\n",gettimeofday_ms(),ppfunc(),ID);
+}
+probe kernel.function("add_hwgenerator_randomness@drivers/char/random.c"){
+	printf("%10d#%25s#Bytes - %4d#Entropy - %4d\n",gettimeofday_ms(),ppfunc(),$count,$entropy);
+}
+probe kernel.function("add_input_randomness@drivers/char/random.c"){
+	ID++;
+	printf("%10d#%25s#Type - %4d#Code - %4d#Value - %4d#ID-%10d\n",gettimeofday_ms(),ppfunc(),$type,$code,$value,ID);
+}
+probe kernel.function("add_interrupt_randomness@drivers/char/random.c"){
+	printf("%10d#%25s#IRQ - %4d\n",gettimeofday_ms(),ppfunc(),$irq);
+}
+probe kernel.function("add_timer_randomness@drivers/char/random.c"){
+	printf("%10d#%25s#eType - %4d#ID-%10d\n",gettimeofday_ms(),ppfunc(),$num,ID);
+}
+probe kernel.function("credit_entropy_bits@drivers/char/random.c"){
+	printf("%10d#%25s#Pool - %12s#Bits - %4d\n",gettimeofday_ms(),ppfunc(),kernel_string($r->name),$nbits);
+}
+probe kernel.function("extract_*@drivers/char/random.c"){
+	printf("%10d#%25s#Pool - %12s\n",gettimeofday_ms(),ppfunc(),kernel_string($r->name));
+}
+probe kernel.function("get_random_bytes*@drivers/char/random.c"){
+	printf("%10d#%25s#Bytes - %4d\n",gettimeofday_ms(),ppfunc(),$nbytes);
+}
+probe kernel.function("init_std_data@drivers/char/random.c"){
+	printf("%10d#%25s#Pool - %12s\n",gettimeofday_ms(),ppfunc(),kernel_string($r->name));
+}
+probe kernel.function("rand_initialize*@drivers/char/random.c"){
+	printf("%10d#%25s\n",gettimeofday_ms(),ppfunc());
+}
+probe kernel.function("*random_read@drivers/char/random.c"){
+	printf("%10d#%25s#Bytes - %4d\n",gettimeofday_ms(),ppfunc(),$nbytes);
+}
+probe kernel.function("random_read@drivers/char/random.c").return{
+	printf("%10d#%25s#Bytes - %4d#RETURN_RAND\n",gettimeofday_ms(),ppfunc(),$nbytes);
+}
+probe kernel.function("random_ioctl@drivers/char/random.c"){
+	printf("%10d#%25s#Command - %4d\n",gettimeofday_ms(),ppfunc(),$cmd);
+}
+probe kernel.function("random_write@drivers/char/random.c"){
+	printf("%10d#%25s#Bytes - %4d\n",gettimeofday_ms(),ppfunc(),$count);
+}
+probe kernel.function("xfer_secondary_pool@drivers/char/random.c"){
+	printf("%10d#%25s#Pool - %12s#Bytes - %4d\n",gettimeofday_ms(),ppfunc(),kernel_string($r->name),$nbytes);
+}
+probe kernel.function("hwrng_cleanup@drivers/char/hw_random/core.c"),
+	kernel.function("hwrng_fillfn@drivers/char/hw_random/core.c"),
+	kernel.function("hwrng_init@drivers/char/hw_random/core.c"),
+	kernel.function("rng_*@drivers/char/hw_random/core.c"),
+	kernel.function("start_khwrngd@drivers/char/hw_random/core.c"){
+	printf("%10d#%25s\n",gettimeofday_ms(),ppfunc());
+}
+probe kernel.function("tpm_get_random@drivers/char/tpm/tpm.c"){
+	printf("%10d#%25s\n",gettimeofday_ms(),ppfunc());
+}

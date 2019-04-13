@@ -1,0 +1,83 @@
+<html>
+<head>
+<meta charset="utf-8">
+<title>All Inclusive Plot</title>
+	<!-- load the d3.js library -->    
+	<script src="http://d3js.org/d3.v3.min.js"></script>
+	<link href="v0_1.css" rel="stylesheet">
+	
+
+
+</head>
+<body>
+<script type="text/javascript">
+var color = d3.scale.category20();
+var dataType = [];
+var globalInfoOnject = [];
+d3.csv("p_estimator.csv", function(error,data){
+	if(error) console.log(error);
+	loadToGlobal(data,1000);
+	d3.csv("p_disk.csv", function(error,data){
+		if(error) console.log(error);
+		loadToGlobal(data,1000);
+		
+		
+		createChart();
+		
+	});
+});
+ 
+ 
+ function createChart(){
+ var charts = [];
+ 
+ 
+ 
+ }
+ 
+ 
+ 
+ 
+ 
+ 
+ function loadToGlobal(data,timeFormat){
+   //Doing color map just to invoke the anonymous function. 
+   color.domain(d3.keys(data[0]).filter(function(key) { // Set the domain of the color ordinal scale to be all the csv headers except "date", matching a color to an issue
+    return key !== "time"; 
+  }));
+
+	if(timeFormat === 1000){
+		data.forEach(function(d){
+			d.time = (+(d.time))*timeFormat;
+		})
+	}else {if(timeFormat === 1){
+			data.forEach(function(d){
+				d.time = (+(d.time))*timeFormat;
+				})
+			}else{
+			data.forEach(function(d){
+			var parseEpoch = d3.time.format("%m:%d:%Y:%H:%M:%S").parse;
+				d.time = parseEpoch(d.time);
+			})
+		}
+	}
+	var name=d3.keys(data[0][1]);
+	var object = (color.domain().map(function(name) { // Nest the data into an array of objects with new keys
+		dataType.push(name);
+		return {
+		  name: name, // "name": the csv headers except date
+		  values: data.map(function(d) { // "values": which has an array of the dates and ratings
+			return {
+			  time: d.time, 
+			  value: +(d[name]),
+			  };
+		  }),
+		  visible: true// "visible": all false except for economy which is true.
+		};
+	  })	
+	);
+	globalInfoOnject.push(object[0]);
+ }
+</script>
+</body>
+</html>

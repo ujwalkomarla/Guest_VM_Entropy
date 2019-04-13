@@ -1,0 +1,117 @@
+MAINTAIN THE DIRECTORY STRUCTURE.
+Scripts are written in a relative path way.
+
+	
+Tests devised:
+	Quiet(0) - No workload doing Disk/Network access.
+	NW(1) - Heavy network communication, simulated using ping.
+	Disk(2) - Random disk access(Since entropy is added only when disk access are random and not sequential)
+	NW+Disk(3) - Combination of tests 1 and 2.
+	(*If you want to do the tests while pulling data from /dev/*random, uncomment appropriate lines in runScript.sh *)
+
+	
+System Logging:
+	iNotifyWait to keep track of access to /dev/*random in an interrupt driven way, and log the access using lsof(iNotifyWait tells you only who was accessed, but no information of 'by whom')
+	systemtap to understand working of random architecture with respect to linux kernel.
+
+	
+Test machine requirements:
+***Install : inotify-tools sysstat systemtap-runtime ssh gcc***
+***Testing Oversubscription? Needs VMtools on Guest, for the scripts to work***
+
+
+Scripts edit:
+***Please fill in the gUser(Username in GOS) and gPass(Password in GOS)***	
+
+
+Scripts Directory Contents:
+-> [Folder: SystemSetup]System Setup for stap and usage. Scripts to install required tools for developing system tap modules on Ubuntu and Cent OS
+	-On Ubuntu, run the script 'Ubuntu_STAP.sh' and test if the system is setup properly by running : 
+			stap -v -e 'probe vfs.read {printf("read performed\n"); exit()}'
+	-If that didn't work, build from source using 'Ubuntu_dbgsym.sh', changing the kernel version details in the script file as deemed fit.
+	
+	-On CentOS, run the 'CentOS_STAP.sh' changing the link as the CentOS rolls out newer version. Test installation
+			stap -v -e 'probe vfs.read {printf("read performed\n"); exit()}'
+	
+	-stapFromSource.sh
+		Script to build stap from source.
+
+	On Test machines, install the following tools:
+	- systemtap-runtime inotify-tools sysstat(apt-get or yum)
+
+	
+->[Folder:stap] .stp file used to probe the kernel functions, related to /dev/*random
+	Instead of building the stap(system tap) module on each system, we can build it in our development environment and use the .ko file on test machines.
+	-Build with the following command
+		stap -r kernel_version script -m module_name #kernel_version = `uname -r`
+		Ex: stap -r `uname -r` randSystap.stp -m randTap.ko #RandTap.ko is used in scripts
+	
+	-List probe-able functions in the kernel
+		stap -l 'kernel.function("*random*")' | sort
+		
+->[Folder:VMcontrol] Controlling VMs, Scripts to Turn on / off VMs(Useful when doing the over-subscription tests, where you have to run tens of VM) 
+	***Needs VM tools on guest system***
+	-StartVM.sh [ESX_serverIP] [Datastore] [VMnameFormat] [StartNumber] [EndNumber]
+		Ex: I have 10 VM with name 'Template' in 'datastore1' with directory names - 'Template1', 'Template2' and so on.
+		StartVM.sh 10.20.68.156 datastore1 Template 0 9
+	-StopVM.sh [ESX_serverIP] [Datastore] [VMnameFormat] [StartNumber] [EndNumber]
+	-ssh2clone.sh [ESX_serverIP] [Datastore] [VM2Clone] [VMnameFormat] [StartNumber] [EndNumber] 
+		Limitations: 1. 'VMnameFormat' should be same as the .vmx name of 'VM2Clone. 
+					 2. The 'clone.sh' script in VMcontrol/bg needs to be in the datastore1 on ESX.(Ex: /vmfs/volumes/datastore1/clone.sh)
+		ssh2clone.sh 10.20.68.156 datastore1 templateU Template 0 9
+	-cloneBTWesx.sh(Not developed)
+		Needs to be modified as required
+	
+	
+->[Folder:PHY_VM_Test]
+	->[Folder:bg]: This folder contains script files and code files required for doing the above tests along with logging of information.
+		iNotify_1.sh : 'cat' - 'entropy_available'. The primary pool entropy estimator.
+		iNotify_2.sh : Uses iNotifyWait and lsof to log access to /dev/*random.
+		randAcc.c : Do random disk access on disk.
+		(***Replace by the module built in second step***)randStap.ko: stap module built for Ubuntu with kernel version(3.16.0-45.58) 
+		seqAcc.c : Do sequential access on disk.	
+	-SetupCopy.sh : Run this script whenever the test system is new or any change in source files. This copies the file in bg directory to test machine.
+		Ex: ./SetupCopy.sh 10.20.68.56
+	-runScript.sh : Script to log in, remove old log files, start the test scripts.(***Run with sudo**)
+		sudo ./runScript.sh [IP] [TestCase-0,1,2,3] [pingToIP]
+		Ex: sudo ./runScript.sh 10.20.68.56 0 10.20.68.156 
+		pingToIP - matters only when carrying out the test 1 and 3. This usually is the other system(i.e., on VM give the Phy machine IP, whereas on Phy provide VM IP)
+	-stopNcopy.sh : Stop the test scripts(*Not possible to stop the system tap module. So copy the files as quickly as possible*) (***Run with sudo**)
+		./stopNCopy.sh [IP] [TestCase-0,1,2,3]
+		Ex: sudo ./stopNCopy.sh 10.20.68.56 1
+		**SCP the log files**
+	
+	
+->[Folder:MKS_Test](Mouse, Keyboard, Screen test - Usually carried out on your development system)
+	Use iNotify_1.sh and iNotify_2.sh as above.
+	Run stap with following command: sudo staprun randTap.ko -D -o randStapData.log -w 2>/dev/null
+	(***Replace by the module built in second step***)randStap.ko: stap module built for Ubuntu with kernel version(3.16.0-45.60) 
+	After the test, moves files as quickly as possible for analysis, as we are not stopping the scripts.
+	
+	
+->[Folder:OvSubTest]	
+	->[Folder:bg]: This folder contains script files and code files required for doing the above tests along with logging of information.
+		iNotify_1.sh : 'cat' - 'entropy_available'. The primary pool entropy estimator.
+		iNotify_2.sh : Uses iNotifyWait and lsof to log access to /dev/*random.
+		randAcc.c : Do random disk access on disk.
+		(***Replace by the module built in second step***)randStap.ko: stap module built for Ubuntu with kernel version(3.16.0-45.58) 
+		SetupCopy.sh : Run this script whenever the test system is new or any change in source files. This copies the file in bg directory to test machine.
+			Ex: ./SetupCopy.sh 10.20.68.56
+		runScript.sh : Script to log in, remove old log files, start the test scripts.
+			sudo ./runScript.sh [IP] [TestCase-0,1,2,3] [pingToIP]
+			Ex: sudo ./runScript.sh 10.20.68.56 0 10.20.68.156 
+			pingToIP - matters only when carrying out the test 1 and 3. This usually is the other system(i.e., on VM give the Phy machine IP, whereas on Phy provide VM IP)
+		stopNcopy.sh : Stop the test scripts(*Not possible to stop the system tap module. So copy the files as quickly as possible*) 
+			./stopNCopy.sh [IP] [TestCase-0,1,2,3]
+			Ex: sudo ./stopNCopy.sh 10.20.68.56 1
+	->[Folder:temp]: Just a temporary place to copy IP address of VMs.
+	-initSetupCopy.sh
+		SSH to all the VMs in Oversubscription test, and copies the required test files by running bg/SetupCopy.sh
+	-initRunScript.sh(***Run with sudo**)
+		SSH to all the VMs in Oversubscription test, and initiates the tests by running bg/runScript.sh
+	-initStopNcopy.sh(***Run with sudo**)
+		SSH to all the VMs in Oversubscription test, and stops the test scripts(stap module doesn't stop), does so by running bg/stopNcopy.sh. 
+		Also, copies the log files(scp)(**Issue with expect and scp. So you have to type the password**)
+
+	
+Translate disk device name to file system : ls -lL /dev/mapper /dev/sd*
